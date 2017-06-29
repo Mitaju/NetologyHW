@@ -1,53 +1,55 @@
 import chardet
-import os
 import json
 
 
-def read_news_json(file_name):
-    folder = os.path.dirname(os.path.realpath(__file__))
-    file_path = os.path.join(*[folder, 'data', file_name+'.json'])
-    with open(file_path, 'rb') as f:
+def main_function():
+    file_list = ['newsafr.json', 'newscy.json', 'newsfr.json', 'newsit.json']
+    for file_name in file_list:
+        encoding_type = decoding_file(file_name)
+        count_dict = open_file(file_name, encoding_type)
+        print_sort_words(count_dict)
+
+а
+def decoding_file(file):
+    with open(file, 'rb') as f:
         data = f.read()
-        chardet_result = chardet.detect(data)
-        if chardet_result and 'encoding' in chardet_result:
-            news_json = data.decode(chardet_result['encoding'])
-            news = json.loads(news_json)
-
-            top10 = get_top10_words(news)
-            print_top10(top10)
+        result = chardet.detect(data)
+    return result['encoding']
 
 
-def get_top10_words(news):
-    text_fields = ['title', 'description']
-    result = {}
-    for news_item in news['rss']['channel']['items']:
-        for field in text_fields:
-            splitted_text = news_item['title'].split()
-            for word in splitted_text:
-                word = word.lower()
-                if len(word) <= 6:
-                    continue
+def open_file(file_name, encoding_type):
+    with open(file_name, encoding=encoding_type) as f:
+        data = json.load(f)
 
-                if word not in result:
-                    result[word] = 1
-                else:
-                    result[word] += 1
+        list_words = []
+        count_dict = {}
+       
+        for text_news in data['rss']['channel']['items']:
+            list_words += (text_news['title']).split()
+            list_words += (text_news['description']).split()
+        for word in list_words:
+            if len(word) < 6:
+                 continue
+            else:
+                if word.lower() not in count_dict:
+                    count_dict[word.lower()] = int(list_words.count(word))
 
-    sorted(result.values())
-    sorted(result, key=result.get)
-    sorted_list = sorted(result.items(), key=lambda x: x[1], reverse=True)
-    return sorted_list[:10]
-
-
-def print_top10(words):
-    for i, word in enumerate(words):
-        print('{}) {} - {}'.format(i + 1, *word))
+        print('В файле {} * {} * обработано:'.format(f.name, (data['rss']['channel']['title'])))
+        print('Cлов {} шт. '.format(len(list_words)))
+        print('Уникальных слов {} шт. длиной более 5 символов'.format(len(count_dict)))
+        print('Новостей {} шт обработанно.'.format(len(data['rss']['channel']['items'])))
+    return count_dict
 
 
-print('q - выход из программы')
+def print_sort_words(count_dict):
+   
+    reves_count_dict = (dict(reversed((sorted(count_dict.items(), key = lambda item: item[1])))))
+    reves_count_dict_sorted = {}
+    for key, value in reves_count_dict.items():
+        if len(reves_count_dict_sorted) < 10:
+            reves_count_dict_sorted[key] = value
+    for key,value in  reves_count_dict_sorted.items():
+        print('{1} - {0}'.format(key, value))
+    print('\n')
 
-while True:
-    input_f = (input('Введите имя файла (без расширения):')).strip()
-    if input_f == 'q':
-        break
-    read_news_json(input_f)
+main_function()
